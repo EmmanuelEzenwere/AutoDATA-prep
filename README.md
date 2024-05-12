@@ -3,7 +3,6 @@ AutoDS-Prep automates the data pre-processing step of Data Science Projects.
 
 
 
-This greatly automates the data pre-processing step of Data Science Projects
 - Removing Missing Values.
 - Converting Categorical Variables to Quantitative Variables.
 - Normalizing Data as an Option.
