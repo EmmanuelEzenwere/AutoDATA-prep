@@ -1,5 +1,5 @@
-# AutoDS-Prep
-AutoDS-Prep automates the data pre-processing step of Data Science Projects.
+# autoDATA-prep
+autoDATA-prep automates the data pre-processing step, this accelerates the first stage of any Data Analysis/ Data Science pipeline.
 
 
 
