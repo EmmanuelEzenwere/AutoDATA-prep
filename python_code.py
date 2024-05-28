@@ -1,36 +1,29 @@
-from cgi import print_form
-import math
-import numpy as np
+# import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score, mean_squared_error
-import AllTogether as t
-import seaborn as sns
 
-
-class AutoDataIRP:
-    def __init__():
+class AutoDataPrep:
+    """
+    PERFORMS manipulations to a pandas data frame to make ready for data analysis, data science and machine learning.
+    """
+    def __init__(self):
         """
-        
 
         Returns
         -------
         None.
 
         """
-
+        self.df = None
         
-    def load(self, file_path, sheet_name=""):
+    def load(self, file_path, sheet_name=None):
         """
-        Loads data file and returns a pandas data frame
+        imports an EXCEL or .CSV file containing the data as a pandas data frame.
 
         Parameters
         ----------
         file_path : string
             string representing absolute file path or relative file path.
-            eg . FilePath = 'C:/Your/File/Path'
+            eg . FilePath = './Filename'
         sheet_name : string
             representing the name of the file, in a multi-sheet file.
             eg. FileName = 'ExcelFileName.xlsx'
@@ -39,235 +32,174 @@ class AutoDataIRP:
         -------      
         self.df: Pandas data frame .
         """
-        # Read all sheets in the excel file
-        df = pd.read_excel(file_path,sheet_name="IPLSOA")
-        # df = pd.read_csv(dir)...
+        file_ext = (file_path.split("/")[-1]).split(".")[-1]
+        if file_ext == "CSV":
+            # Read the CSV file into a DataFrame
+            df = pd.read_csv(file_path)
+        elif file_ext == "xlsx":
+            # Read all sheets in the excel file
+            if sheet_name is not None:
+                df = pd.read_excel(file_path,sheet_name)
+            else:
+                df = pd.read_excel(file_path)
+        try:
+            self.df = df
+            self._properties_ = None
+            return df
+        except UnboundLocalError:
+            print("ERROR IN READING DATA: FORMAT NOT SUPPORTED. FORMAT EXPECTED (.csv & .xlsx)")
+            return None
 
-        self.df = df
-        return df
-
-    def stats(self, info_type="Summary"):
+    def properties(self):
         """
+        Fetches various parameters about the data such as the data type composition, size of the data,
+        number of missing values,
         Parameters
         ----------
-        df : pandas data frame.
-
+        info_type = "Summary": pandas data frame. Outputs a brief summary of the properties of the data.
         Returns
         -------
         """
-        print("\nData Stats : ")
-        df = self.df
-        try:
-            n_row, n_col = df.shape
+        df = self.df.copy()
+        n_row, n_col = df.shape
+        print("\nDATA PROPERTIES : ")
+        # print(f"\n{df.head(5)}")
+        print(f'\nNUMBER OF DATA ROWS : ({n_row})')
+        print(f'NUMBER OF DATA COLUMNS : ({n_col})')
+        print('\nDATA COLUMNS : ')
+        for col in list(df.columns):
+            print(col)
+        print('\nAVAILABLE DATA TYPES :')
+        # if info_type != "Summary" :
+        print(df.dtypes.value_counts())
+        print('\nDATA TYPES SUMMARY :')
+        for var in df:
+            print(f'{var} : {df[var].dtypes}')          
 
-        except ValueError:
-            n_row = 'generic'
-            n_col = 'generic'
+        # INITIALIZE PROPERTIES DICT
+        properties_ = {}
+        properties = {}
 
-
-        if info_type == "Full" :
-            print_form()
-
-
-            num_rows = "{:0,.0f}".format(n_row)
-            print(f'Data rows - ({num_rows}), and Data columns - ({n_col}).\n')
-            print('Available Data Types :')
-            print_form()
-            print(df.dtypes.value_counts())
-
-            print_form()
-            print('Broad Data Distribution :')
-            for var in df:
-                print_form()
-                print(df[var].value_counts())
-
-
-        # Classifying Columns into Categorical & Quantitative Variables.
-        data_class_summary = {}
-        data_class = {}
-        # Categorical Variables.
+        # CLASSIFY Columns into Categorical & Quantitative Variables.
         cat_data = df.select_dtypes(include="object").copy()
+        quant_data = df.select_dtypes(include='number').copy()
         cat_cols = cat_data.columns
-        data_class["categorical"] = cat_cols.shape[0]
-        data_class_summary[f"categorical ({cat_cols.shape[0]})"] = list(cat_cols)
+        quant_cols = quant_data.columns
+        # UPDATE data-class dictionary
+        properties_[f"quantifiable ({quant_cols.shape[0]})"] = list(quant_cols)
+        properties["quantifiable"] = quant_cols.shape[0]
+        # PRINT OUTPUT
+        print('\nCATEGORICAL COLUMNS: ')
+        for col in list(cat_cols):
+            print(col)
+        print('\nQUANTITATIVE COLUMNS: ')
+        for col in list(quant_cols):
+            print(col)
+        properties["categorical"] = cat_cols.shape[0]
+        properties_[f"categorical ({cat_cols.shape[0]})"] = list(cat_cols)
         # Numerical / Quantitative,  Variables.
-        num_data = df.select_dtypes(include='number').copy()
-        num_cols = num_data.columns
-        data_class_summary[f"quantifiable ({num_cols.shape[0]})"] = list(num_cols)
-        data_class["quantifiable"] = num_cols.shape[0]
-        print("\nData Class Summary : ")
-        
-        # print(data_class_summary)
-        # print(num_cols)
-        print(list(data_class_summary.keys()))
+        print("\nCOLUMN DATA TYPES: ")
+        # print(properties_)
+        # print(quant_cols)
+        print(list(properties_.keys()))
 
         # Find the set of columns in the data with missing values.
         df_mean = df.isnull().mean()
-        null_cols = set(df.columns[df_mean > 0])
-        print(f"\nColumns with missing values: ({len(null_cols)})")
-        print(f"\nColumns with missing values: ({null_cols})")
-        
+        null_cols_names = df.columns[df_mean > 0]
+        cols_null_score = df_mean[df_mean > 0]
+        print(f'\nNO. OF COLUMNS WITH MISSING VALUES: ({len(null_cols_names)})')
+        print('\nCOLUMNS WITH MISSING VALUES:') 
+        for col in list(null_cols_names):
+            print(col)
 
-        # Evaluate the number of missing values in each column.
-        null_cols_stats = df_mean * n_row
-        notnull_cols = null_cols_stats[null_cols_stats > 0]
-        print('\nNumber of missing values per Column: ')
-        
-        if notnull_cols.empty:
-            print(null_cols_stats)
-        else:
-            print(notnull_cols)
-        print('\nNumber of missing values per Column (%):')
-        
-        missing_values_ratio = (df_mean[df_mean > 0] * 100).round(2)
-        if missing_values_ratio.empty:
-            print("None")
-        else:
-            print(missing_values_ratio)
+        # EVALUATE the number of missing values in each column.
+        print('\nNUMBER OF MISSING VALUES PER COLUMN (QTY): ')
+        print(df_mean * n_row)
+        print('\nNUMBER OF MISSING VALUES PER COLUMN (%):')
+        print((df_mean * 100).round(2))
+        # self._properties_ =  properties_
+          #     print('Broad Data Distribution :')
+        # for var in df:
+        #     print(df[var].value_counts())
+        return cols_null_score * 100
 
-        return missing_values_ratio
-
-
-        
-    
-    def prep(self,variables_dict):
+    def prep(self, rename_scheme={}, max_null_threshold_val=25):
         """
+        PERFORMS manipulations to a pandas data frame to make ready for data analysis, data science and machine learning.
+        ACTIONS:
+        - Replaces categorical values with dummy variables.
+        - Removes rows with NULL/ NAN values.
+        - Drops columns with null values > MAX_NULL_THESHOLD_VAL. eg. 50% of missing values.
+        - RENAMES column names with specified column names.
+        - TYPE REFORMATTING. Changes data type eg uint8 to float32
+
         Parameters
         ----------
-        Takes a pandas data frame and replaces values under the given variable name columns
-        with new values
         df : pandas data frame
              raw pandas data frame, un prepared for modelling
 
-        variables_dict : Dictionary with variable names as keys and new values as values.
-                         variables_dict is of the form : {Variable Name : [Prev Value, New Value],...}
+        rename_scheme : Dictionary with variable names as keys and new values as values.
+                         rename_scheme is of the form : {Variable Name : [Prev Value, New Value],...}
 
         Returns
         -------
-        prepared_df, a new data frame obtained after removing missing rows,
+        df, a new data frame obtained after removing missing rows,
         displaying quantifiable and categorical columns, and general statistics-
 
 
         -data about the data frame.
         """
         # initialize our return df variable.
-        prepared_df = self.df.copy()
+        df = self.df.copy()
 
 
-        # Get data stats.
-        missing_values_ratio = self.data_stats(prepared_df, info_type="Full")
+        # Get Data Properties.
+        null_cols_names = self.properties()
+
+        print("\nDATA PREPARATION : ")
 
         # Data Imputation
-        for var in variables_dict.keys() :
-            # If data update for that variable is nested.
-            if type(variables_dict[var])== dict:
-                for prev_var_val in variables_dict[var].keys(): 
-                    new_var_val = variables_dict[var][prev_var_val]
-                    prepared_df[var].replace(prev_var_val, new_var_val, inplace=True)
+        for var in rename_scheme.keys() :
+            # CHECK If data update scheme for that variable is nested.
+            if isinstance(rename_scheme[var],dict):
+                for prev_val in rename_scheme[var].keys(): 
+                    new_val = rename_scheme[var][prev_val]
+                    df[var].replace(prev_val, new_val, inplace=True)
 
             else:
-                prev_var_val, new_var_val = variables_dict[var]
-                prepared_df[var].replace(prev_var_val, new_var_val, inplace=True)
+                prev_val, new_val = rename_scheme[var]
+                df[var].replace(prev_val, new_val, inplace=True)
 
 
         # Type Reformatting
-        # prepared_df["YearsCodePro"] = prepared_df["YearsCodePro"].astype('float64')
+        # df["YearsCodePro"] = df["YearsCodePro"].astype('float64')
 
         # Remove all rows of columns with NAN values.
-        threshold = 60
         print(
-            f'\nData-Prep: Drop columns with {threshold}% of their values as NAN')
-        print(f'\nShape, pre data-prep: {prepared_df.shape}')
-        for col in missing_values_ratio.index:
-            if missing_values_ratio[col] > threshold:
-                prepared_df = prepared_df.drop(col, axis=1)
-        print(f'Shape, post data-prep: {prepared_df.shape}')
-        print('\nData-Prep: Drop rows containing NAN values')
-        prepared_df = prepared_df.dropna(axis=0)
-        print(f'Shape, Post removal of NAN column rows: {prepared_df.shape}')
-
-        # Replacing Categorical Variables with Dummy Variables.
-        print('\nData-Prep: Replace Categorical Variables with Dummy Variables')
-        cat_vars = prepared_df.select_dtypes(include=['object']).copy()
+            f'\nDROP COLUMNS with {max_null_threshold_val}% of their values as NAN')
+        print(f'\nSHAPE, PRE DATA-PREP.: {df.shape}')
+        # DROP COLUMNS containing NAN/ NULL values exceeding max_null_threhold_val
+        dropped_cols = []
+        for col in null_cols_names.index:
+            if null_cols_names[col] > max_null_threshold_val:
+                dropped_cols.append(col)
+                df = df.drop(col, axis=1)
+        print('\nCOLUMNS DROPPED: ')
+        for col in dropped_cols:
+            print(col)
+        print(f'\nSHAPE, POST DATA-PREP: {df.shape}')
+        #DROP ROWS containing NAN values')
+        df = df.dropna(axis=0)
+        print(f'\nSHAPE, POST NAN ROWS REMOVAL: {df.shape}')
+  
+        # REPLACE Categorical Variables with Dummy Variables.
+        cat_vars = df.select_dtypes(include=['object']).copy()
         cat_cols = cat_vars.columns
         for var in cat_cols:
             dummy_var = pd.get_dummies(
-                prepared_df[var], prefix=var, prefix_sep='_', drop_first=True)
-            prepared_df = pd.concat(
-                [prepared_df.drop(var, axis=1), dummy_var], axis=1)
-        print(f'Shape, Post replacement of Categorical Variables with Dummy Variables : {prepared_df.shape}')
-        self.data_stats(prepared_df)
-
-        return prepared_df
+                df[var], prefix=var, prefix_sep='_', drop_first=True)
+            df = pd.concat(
+                [df.drop(var, axis=1), dummy_var], axis=1)
+        print(f'\nSHAPE, POST SUBSTITUTION of categorical variables with dummy variables : {df.shape}')
         
-    def aprintend():
-        """
-        """
-        
-    def data_plot(x_label, y_label, x_values, y_values, path):
-        """
-
-
-        Parameters
-        ----------
-        x_label : TYPE
-            DESCRIPTION.
-        y_label : TYPE
-            DESCRIPTION.
-        x_values : TYPE
-            DESCRIPTION.
-        y_values : TYPE
-            DESCRIPTION.
-        path : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
-
-        print("\n\nData Plots")
-        print_form()
-
-        if type(x_values[0]) == list or type(x_values[0]) == pd.core.series.Series:
-            colors = ['b', 'g', 'c', 'm', 'y', 'k']
-            fig, ax = plt.subplots()
-            for index in range(0, len(x_values)):
-                x_val = x_values[index]
-                y_val = y_values[index]
-                LABEL = 'Model Prediction'
-
-                if index == 0:
-                    # Add regression line to plot
-                    best_fit_params = np.polyfit(x_val, y_val, 1)
-                    best_fit_poly = np.poly1d(best_fit_params)
-                    ax.plot(x_val, best_fit_poly(x_val),
-                            color='r', label='Line Of Best Fit')
-                    LABEL = 'Actual'
-
-                ax.set_xlabel(f'{x_label}')
-                ax.set_ylabel(f'{y_label}')
-                ax.set_title(f'{x_label} vs {y_label}')
-
-                color = colors[min(index, len(colors))]
-                ax.plot(x_val, y_val, 'o-', color=color, label=LABEL)
-                ax.legend()
-
-
-        else:
-            # Add regression line to plot
-            best_fit_params = np.polyfit(x_values, y_values, 1)
-            best_fit_poly = np.poly1d(best_fit_params)
-
-            plt.xlabel(f'{x_label}')
-            plt.ylabel(f'{y_label}')
-            plt.title(f'{x_label} vs {y_label}')
-
-            plt.plot(x_values, y_values, 'o-', color='b')
-            plt.plot(x_values, y_values, 'o-', color='b')
-            plt.plot(x_values, best_fit_poly(x_values), color='red')
-        plt.savefig(path)
-        plt.show()
-
-        ƒƒƒ
+        return df

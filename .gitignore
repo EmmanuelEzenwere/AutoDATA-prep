@@ -1,0 +1,8 @@
+# Ignore all CSV files
+*.csv
+
+# Alternatively, we use this pattern to be explicit
+**/*.csv
+
+# Ignore all CSV files
+*.xlsx
