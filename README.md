@@ -1,5 +1,5 @@
 # autoDATA-prep
-autoDATA-prep automates the data pre-processing step, this accelerates the first stage of any Data Analysis/ Data Science pipeline.
+autoDATA-prep automates the data pre-processing step, this accelerates the first stage of any Data Analysis/ Data Science/ML pipeline.
 
 
 
